@@ -5,38 +5,38 @@ import { getMe, deleteBook } from '../utils/API';
 import Auth from '../utils/auth';
 import { removeBookId } from '../utils/localStorage';
 
-const SavedBooks = () => {
-  const [userData, setUserData] = useState({});
+//*-------------*----------*-*-
+import { useMutation, useQuery } from '@apollo/client';
+
+import { REMOVE_BOOK } from '../utils/mutations';
+import { GET_ME } from "../utils/queries";
+
+// const SavedBooks = () => {
+//   const [userData, setUserData] = useState({});
 
   // use this to determine if `useEffect()` hook needs to run again
-  const userDataLength = Object.keys(userData).length;
-
-  useEffect(() => {
-    const getUserData = async () => {
-      try {
-        const token = Auth.loggedIn() ? Auth.getToken() : null;
-
-        if (!token) {
-          return false;
-        }
-
-        const response = await getMe(token);
-
-        if (!response.ok) {
-          throw new Error('something went wrong!');
-        }
-
-        const user = await response.json();
-        setUserData(user);
-      } catch (err) {
-        console.error(err);
+ 
+  const SavedBooks = ({ username, savedBooks }) => {
+    const [userData, setUserData] = useQuery(GET_ME);
+    const [removeBook, { error }] = useMutation(REMOVE_BOOK
+      , {
+        update(cache, { data: { removeBook } }) {
+          try {
+            const { savedBooks } = cache.readQuery({ query: GET_ME });
+            cache.writeQuery({
+              query: GET_ME,
+              data: { savedBooks: [removeBook, ...savedBooks] },
+            });
+          } catch (e) {
+            console.error(e);
+          }
+        },
       }
-    };
+    );
+    const userDataLength = Object.keys(userData).length;
 
-    getUserData();
-  }, [userDataLength]);
 
-  // create function that accepts the book's mongo _id value as param and deletes the book from the database
+//   // create function that accepts the book's mongo _id value as param and deletes the book from the database
   const handleDeleteBook = async (bookId) => {
     const token = Auth.loggedIn() ? Auth.getToken() : null;
 
